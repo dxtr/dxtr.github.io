@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+
+  <head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>
+    
+      Working with MySQL &middot; dxtr
+    
+  </title>
+
+  
+  <link rel="stylesheet" href="http://dxtr.github.io/css/poole.css">
+  <link rel="stylesheet" href="http://dxtr.github.io/css/syntax.css">
+  <link rel="stylesheet" href="http://dxtr.github.io/css/lanyon.css">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Serif:400,400italic,700|PT+Sans:400">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="http://dxtr.github.io/assets/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="http://dxtr.github.io/assets/favicon.ico">
+
+  
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="http://dxtr.github.io/atom.xml">
+</head>
+
+
+  <body>
+
+    
+<input type="checkbox" class="sidebar-checkbox" id="sidebar-checkbox">
+
+
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-item">
+	  <p>I couldn't come up with anything fancy to write here</p>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a class="sidebar-nav-item " href="http://dxtr.github.io/">Home</a>
+    <a class="sidebar-nav-item " href="http://dxtr.github.io/post">Posts</a>
+
+    
+    
+      
+    
+      
+    
+      
+        <a class="sidebar-nav-item " href="http://dxtr.github.io/fixed/about">About</a>
+      
+    
+
+    
+  </nav>
+
+  <div class="sidebar-item">
+    <p>&copy; 1. All rights reserved.</p>
+  </div>
+</div>
+
+
+    
+    <div class="wrap">
+      <div class="masthead">
+        <div class="container">
+          <h3 class="masthead-title">
+            <a href="http://dxtr.github.io/" title="Home">dxtr</a>
+            <small>Just me</small>
+          </h3>
+        </div>
+      </div>
+
+      <div class="container content">
+
+
+<div class="post">
+  <h1 class="post-title">Working with MySQL</h1>
+  <span class="post-date">2012-09-04</span>
+  <p>While working on a new project we realized we would have to overcome a few problems.</p>
+
+<p>First of all we would like to generate unique IDs for entries and not use MySQLs AUTO_INCREMENT, because that could go horribly wrong in this situation. This is bad.</p>
+
+<p>Because I know MySQL supports <a href="http://dev.mysql.com/doc/refman/5.5/en/miscellaneous-functions.html#function__id">UUIDS</a> and <a href="http://dev.mysql.com/doc/refman/5.5/en/encryption-functions.html#function_sha1">SHA1</a> I came up with a pretty simple stored function:</p>
+
+<pre><code>create function generate_id() returns binary(20) deterministic
+return unhex(sha1(uuid()))
+</code></pre>
+
+<p>I&rsquo;m not quite sure (yet) how it performs, or even if there are better ways to do it. But it does the job for now. If the conflict risk is too high (it isn&rsquo;t) I could just switch to <a href="http://dev.mysql.com/doc/refman/5.5/en/encryption-functions.html#function_sha2">SHA2</a> and be done with it.</p>
+
+<p>Another problem is that we will have to calculate a checksum of our tables and CHECKSUM TABLE; just won&rsquo;t cut it. After some Googling I stumbled over <a href="http://www.xaprb.com/blog/about-xaprb/">Baron Schwartz</a> <a href="http://www.xaprb.com/blog/">blog</a> and found <a href="http://www.xaprb.com/blog/2007/01/25/how-to-calculate-table-checksums-in-mysql/">this codesnippet</a>:</p>
+
+<pre><code>set @crc := '', @cnt := 0;
+select min(least(
+    length(@crc := sha1(concat(
+        @crc,
+        sha1(concat_ws('#', type, variety, price))))),
+    @cnt := @cnt + 1
+)) as discard
+from fruits use index(PRIMARY);
+select @crc, @cnt;
+</code></pre>
+
+<p>If you check the link he even made a perl script to generate an appropriate query depending on your setup. (That guy even has a nice <a href="http://code.google.com/p/m@tkit/">toolkit</a> to do all sorts of nifty things, although it isn&rsquo;t upated anymore because it&rsquo;s now part of Percona)</p>
+
+<p>Even though I noticed that this post was over five years old this was absolutely perfect for what we needed it for! In the summary he also states that this solution avoids using a BLACKHOLE table (Which it does, obviously) and reduces overhead because the function reduces the tables result set to a single integer Honestly I don&rsquo;t know if there are better ways to achieve it today&hellip; but meh.</p>
+
+<p>I read that article, found it interesting, started clicking on links and noticed that this guy actually knows stuff. Stuff I know nothing about (I admit my MySQL skills are&hellip; Lacking to say the least). <a href="http://www.xaprb.com/blog/2006/12/15/advanced-mysql-user-variable-techniques/">This article</a> was particularly interesting and relevant to my interests.</p>
+
+<p>What we have set out to achieve is to have a sort-of ad-hoc mysql replication system, therefore we can&rsquo;t involve MySQLs master-slave implementation (Because MySQL and ad-hoc doesn&rsquo;t play nice as far as I know. But I may be wrong).</p>
+
+<p>Our third problem then is how we&rsquo;re going to to transfer the data between nodes. We&rsquo;re still working on this one.</p>
+
+<p>What we have decided so far is to encapsulate the MySQL server in a layer that takes care of connections, consistency checks, etc. To resolve conflicts we take the easy approach and store and compare a timestamp of the latest changes and the newest version takes precedence.</p>
+
+<p>P.S. I will definitely look into getting a book or two from <a href="http://www.xaprb.com/blog/essential-books/">this
+list</a></p>
+
+</div>
+
+      </div>
+    </div>
+
+    <label for="sidebar-checkbox" class="sidebar-toggle"></label>
+
+  </body>
+</html>
+

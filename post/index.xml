@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title> </title>
+    <link>http://dxtr.github.io/post/index.xml</link>
+    <language>en-us</language>
+    <author>Kim Lidström</author>
+    <rights>(C) 2012</rights>
+    <updated>2012-09-04 00:00:00 &#43;0000 UTC</updated>
+
+    
+      
+        <item>
+          <title>Working with MySQL</title>
+          <link>http://dxtr.github.io/post/2012-09-04-working-with-mysql</link>
+          <pubDate>Tue, 04 Sep 2012 00:00:00 UTC</pubDate>
+          <author>Kim Lidström</author>
+          <guid>http://dxtr.github.io/post/2012-09-04-working-with-mysql</guid>
+          <description>&lt;p&gt;While working on a new project we realized we would have to overcome a few problems.&lt;/p&gt;
+
+&lt;p&gt;First of all we would like to generate unique IDs for entries and not use MySQLs AUTO_INCREMENT, because that could go horribly wrong in this situation. This is bad.&lt;/p&gt;
+
+&lt;p&gt;Because I know MySQL supports &lt;a href=&#34;http://dev.mysql.com/doc/refman/5.5/en/miscellaneous-functions.html#function__id&#34;&gt;UUIDS&lt;/a&gt; and &lt;a href=&#34;http://dev.mysql.com/doc/refman/5.5/en/encryption-functions.html#function_sha1&#34;&gt;SHA1&lt;/a&gt; I came up with a pretty simple stored function:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;create function generate_id() returns binary(20) deterministic
+return unhex(sha1(uuid()))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;I&amp;rsquo;m not quite sure (yet) how it performs, or even if there are better ways to do it. But it does the job for now. If the conflict risk is too high (it isn&amp;rsquo;t) I could just switch to &lt;a href=&#34;http://dev.mysql.com/doc/refman/5.5/en/encryption-functions.html#function_sha2&#34;&gt;SHA2&lt;/a&gt; and be done with it.&lt;/p&gt;
+
+&lt;p&gt;Another problem is that we will have to calculate a checksum of our tables and CHECKSUM TABLE; just won&amp;rsquo;t cut it. After some Googling I stumbled over &lt;a href=&#34;http://www.xaprb.com/blog/about-xaprb/&#34;&gt;Baron Schwartz&lt;/a&gt; &lt;a href=&#34;http://www.xaprb.com/blog/&#34;&gt;blog&lt;/a&gt; and found &lt;a href=&#34;http://www.xaprb.com/blog/2007/01/25/how-to-calculate-table-checksums-in-mysql/&#34;&gt;this codesnippet&lt;/a&gt;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;set @crc := &#39;&#39;, @cnt := 0;
+select min(least(
+    length(@crc := sha1(concat(
+        @crc,
+        sha1(concat_ws(&#39;#&#39;, type, variety, price))))),
+    @cnt := @cnt + 1
+)) as discard
+from fruits use index(PRIMARY);
+select @crc, @cnt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If you check the link he even made a perl script to generate an appropriate query depending on your setup. (That guy even has a nice &lt;a href=&#34;http://code.google.com/p/m@tkit/&#34;&gt;toolkit&lt;/a&gt; to do all sorts of nifty things, although it isn&amp;rsquo;t upated anymore because it&amp;rsquo;s now part of Percona)&lt;/p&gt;
+
+&lt;p&gt;Even though I noticed that this post was over five years old this was absolutely perfect for what we needed it for! In the summary he also states that this solution avoids using a BLACKHOLE table (Which it does, obviously) and reduces overhead because the function reduces the tables result set to a single integer Honestly I don&amp;rsquo;t know if there are better ways to achieve it today&amp;hellip; but meh.&lt;/p&gt;
+
+&lt;p&gt;I read that article, found it interesting, started clicking on links and noticed that this guy actually knows stuff. Stuff I know nothing about (I admit my MySQL skills are&amp;hellip; Lacking to say the least). &lt;a href=&#34;http://www.xaprb.com/blog/2006/12/15/advanced-mysql-user-variable-techniques/&#34;&gt;This article&lt;/a&gt; was particularly interesting and relevant to my interests.&lt;/p&gt;
+
+&lt;p&gt;What we have set out to achieve is to have a sort-of ad-hoc mysql replication system, therefore we can&amp;rsquo;t involve MySQLs master-slave implementation (Because MySQL and ad-hoc doesn&amp;rsquo;t play nice as far as I know. But I may be wrong).&lt;/p&gt;
+
+&lt;p&gt;Our third problem then is how we&amp;rsquo;re going to to transfer the data between nodes. We&amp;rsquo;re still working on this one.&lt;/p&gt;
+
+&lt;p&gt;What we have decided so far is to encapsulate the MySQL server in a layer that takes care of connections, consistency checks, etc. To resolve conflicts we take the easy approach and store and compare a timestamp of the latest changes and the newest version takes precedence.&lt;/p&gt;
+
+&lt;p&gt;P.S. I will definitely look into getting a book or two from &lt;a href=&#34;http://www.xaprb.com/blog/essential-books/&#34;&gt;this
+list&lt;/a&gt;&lt;/p&gt;
+</description>
+        </item>
+      
+    
+
+  </channel>
+</rss>
