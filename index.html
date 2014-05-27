@@ -102,7 +102,8 @@ return unhex(sha1(uuid()))
 
 <p>I&rsquo;m not quite sure (yet) how it performs, or even if there are better ways to do it. But it does the job for now. If the conflict risk is too high (it isn&rsquo;t) I could just switch to <a href="http://dev.mysql.com/doc/refman/5.5/en/encryption-functions.html#function_sha2">SHA2</a> and be done with it.</p>
 
-<p>Another problem is that we will have to calculate a checksum of our tables and CHECKSUM TABLE; just won&rsquo;t cut it. After some Googling I stumbled over <a href="http://www.xaprb.com/blog/about-xaprb/">Baron Schwartz</a> <a href="http://www.xaprb.com/blog/">blog</a> and found <a href="http://www.xaprb.com/blog/2007/01/25/how-to-calculate-table-checksums-in-mysql/">this codesnippet</a>:</p>
+<p>Another problem is that we will have to calculate a checksum of our tables and
+<code>CHECKSUM TABLE;</code> just won&rsquo;t cut it. After some Googling I stumbled over <a href="http://www.xaprb.com/blog/about-xaprb/">Baron Schwartz</a> <a href="http://www.xaprb.com/blog/">blog</a> and found <a href="http://www.xaprb.com/blog/2007/01/25/how-to-calculate-table-checksums-in-mysql/">this codesnippet</a>:</p>
 
 <pre><code>set @crc := '', @cnt := 0;
 select min(least(

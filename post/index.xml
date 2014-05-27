@@ -28,7 +28,8 @@ return unhex(sha1(uuid()))
 
 &lt;p&gt;I&amp;rsquo;m not quite sure (yet) how it performs, or even if there are better ways to do it. But it does the job for now. If the conflict risk is too high (it isn&amp;rsquo;t) I could just switch to &lt;a href=&#34;http://dev.mysql.com/doc/refman/5.5/en/encryption-functions.html#function_sha2&#34;&gt;SHA2&lt;/a&gt; and be done with it.&lt;/p&gt;
 
-&lt;p&gt;Another problem is that we will have to calculate a checksum of our tables and CHECKSUM TABLE; just won&amp;rsquo;t cut it. After some Googling I stumbled over &lt;a href=&#34;http://www.xaprb.com/blog/about-xaprb/&#34;&gt;Baron Schwartz&lt;/a&gt; &lt;a href=&#34;http://www.xaprb.com/blog/&#34;&gt;blog&lt;/a&gt; and found &lt;a href=&#34;http://www.xaprb.com/blog/2007/01/25/how-to-calculate-table-checksums-in-mysql/&#34;&gt;this codesnippet&lt;/a&gt;:&lt;/p&gt;
+&lt;p&gt;Another problem is that we will have to calculate a checksum of our tables and
+&lt;code&gt;CHECKSUM TABLE;&lt;/code&gt; just won&amp;rsquo;t cut it. After some Googling I stumbled over &lt;a href=&#34;http://www.xaprb.com/blog/about-xaprb/&#34;&gt;Baron Schwartz&lt;/a&gt; &lt;a href=&#34;http://www.xaprb.com/blog/&#34;&gt;blog&lt;/a&gt; and found &lt;a href=&#34;http://www.xaprb.com/blog/2007/01/25/how-to-calculate-table-checksums-in-mysql/&#34;&gt;this codesnippet&lt;/a&gt;:&lt;/p&gt;
 
 &lt;pre&gt;&lt;code&gt;set @crc := &#39;&#39;, @cnt := 0;
 select min(least(
